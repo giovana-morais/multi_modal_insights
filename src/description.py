@@ -1,82 +1,93 @@
 import transformers
-import torchvision.datasets as dset
 
 from PIL import Image
-# from torch.utils.data import Dataset, DataLoader
 
-class Description:
-    def __init__(self, samples, model_id):
-        self.data_home = data_home
-        self.data_type = data_type
+import config
+
+class DatasetDescription:
+    def __init__(self, descriptions, tokenizer, model, model_id, verbose=False):
+        self.descriptions = descriptions
+        self.tokenizer = tokenizer(model_id)
+        self.model = model(model_id)
+        self.verbose = verbose
         return
 
+    def generate_input_text(self, verbose=False):
+        dataset_input_text = f"The following items are descriptions of {len(self.descriptions)} items of the same dataset. Create a unique description of the whole dataset for me that summarizes the common characteristics."
 
-    def generate_description():
-        return
+        for idx, desc in enumerate(self.descriptions):
+            d = f"\n{idx+1})  {desc}"
+            dataset_input_text += d
+
+        dataset_input_text += "\n"
+
+        if self.verbose:
+            print(dataset_input_text)
+        return dataset_input_text
+
+    def generate_description(self):
+        dataset_input_text = self.generate_input_text()
+
+        input_ids = self.tokenizer(dataset_input_text, return_tensors="pt").input_ids
+
+        output = self.model.generate(input_ids, max_length=200).squeeze()
+        dataset_description = self.tokenizer.decode(output)
+
+        if self.verbose:
+            print(dataset_description)
+        return dataset_description
+
 
 class ImageDescription:
-    def __init__(self, samples, model_id, model_kwargs=None):
-        # super(ImageDescription, self).__init__()
+    def __init__(self, samples, processor, model, model_id, model_kwargs=None, verbose=False):
+        """
+        arguments
+        ---
+            samples         : list[str]
+                list with samples paths
+            processor       : transformers.processor
+            model           : transformers.model
+            model_kwargs    : dict
+                dictionary with additional model parameters
+            model_id        : str
+                identifier of model
+        """
+
         self.samples = samples
         if len(samples) < 10:
             raise ValueError("We need at least 10 samples")
 
 
-        self.model_id = model_id
-        self.model_kwargs = model_kwargs
-
-        self.pipeline = transformers.pipeline(
-                "image-to-text",
-                model=model_id,
-                model_kwargs=model_kwargs
-        )
-
+        self.processor = processor(model_id)
+        self.model = model(model_id)
 
         return
 
-    def generate_sample_descriptions(self, text, processor, model):
-        print("instatiating modality-specific model")
+    def generate_sample_descriptions(self, text):
+        """
+        generate description for every sample image
 
-        processor = processor(self.model_id)
-        model = model(self.model_id)
+        arguments
+        ---
+            text : str
+                base text for processor
+
+        return
+        ---
+            descriptions : list[str]
+                list with description for each sample
+        """
 
         descriptions = []
         for img_path in self.samples:
             image = Image.open(img_path).convert("RGB")
-            input = processor(image, text, return_tensors="pt")
-            model_output = model.generate(**input, max_length=40).squeeze()
-            # print(model_output.shape)
-            # print(model_output.squeeze().shape)
-            description = processor.decode(model_output, skip_special_tokens=True)
+            input = self.processor(image, text, return_tensors="pt")
+            model_output = self.model.generate(**input, max_length=40).squeeze()
+            description = self.processor.decode(model_output, skip_special_tokens=True)
             descriptions.append(description)
 
         return descriptions
 
-    # def generate_dataset_description():
-    #     return
-
-
-# class AudioDescription():
-#     def __init__(self, dataloader, n_samples, model_id, model_kwargs=None):
-#         self.n_samples = n_samples
-#         self.model_id = model_id
-#         self.model_kwargs = model_kwargs
-
-#         self.pipeline = transformers.pipeline(
-#                 "image-to-text",
-#                 model=model_id,
-#                 model_kwargs=model_kwargs
-#         }
-#         return
-
-def generate_input_text(descriptions):
-    dataset_input_text = f"The following items are descriptions of {len(descriptions)} items of the same dataset. Create a unique description of the whole dataset for me that summarizes the common characteristics."
-
-    for idx, desc in enumerate(descriptions):
-        d = f"\n{idx+1})  {desc}"
-        dataset_input_text += d
-
-    return dataset_input_text
 
 
 if __name__ == "__main__":
@@ -88,23 +99,20 @@ if __name__ == "__main__":
 
     samples = random.choices(all_samples, k=10)
 
-    image_model_id = "Salesforce/blip-image-captioning-base"
-    text = "a photography of"
-    sample_processor = transformers.BlipProcessor.from_pretrained
-    sample_model = transformers.BlipForConditionalGeneration.from_pretrained
+    descriptions = ImageDescription(
+            samples=samples,
+            processor=config.IMAGE_PROCESSOR,
+            model=config.IMAGE_MODEL,
+            model_id=config.IMAGE_MODEL_ID,
+            verbose=True
+    ).generate_sample_descriptions(config.IMAGE_SAMPLE_DESCRIPTION_TEXT)
 
-    descriptions = ImageDescription(samples, image_model_id).generate_sample_descriptions(text, sample_processor, sample_model)
-    print(descriptions)
+    # combining sample descriptions to generate dataset description
+    dds = DatasetDescription(
+            descriptions=descriptions,
+            tokenizer=config.DATASET_TOKENIZER,
+            model=config.DATASET_MODEL,
+            model_id=config.DATASET_MODEL_ID,
+            verbose=True)
 
-    # dataset overall description
-    dataset_input_text = generate_input_text(descriptions)
-    print(dataset_input_text)
-
-    dataset_tokenizer = transformers.T5Tokenizer.from_pretrained("google/flan-t5-base")
-    dataset_model = transformers.T5ForConditionalGeneration.from_pretrained("google/flan-t5-base")
-
-    input_ids = dataset_tokenizer(dataset_input_text, return_tensors="pt").input_ids
-
-    output = dataset_model.generate(input_ids, max_length=40).squeeze()
-    dataset_description = dataset_tokenizer.decode(output)
-    print(dataset_description)
+    dds.generate_description()
