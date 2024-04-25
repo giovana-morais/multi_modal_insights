@@ -21,40 +21,30 @@ def statistics(data_home):
     folder_structure = {}
     file_type_count = {}
 
+    # FIXME: right now subfolders are being counted as files. this is not what i want.
     for current_dir, subdirs, files in os.walk(data_home):
-        # folder_structure[current_dir] = {}
-        print(f"{current_dir} \t {len(files)}")
+        folder_structure[os.path.basename(current_dir)] = {}
 
         for f in files:
             ext = os.path.splitext(f)[-1]
             file_type_count.setdefault(ext, 0)
             file_type_count[ext] += 1
 
-        folder_structure[current_dir] = len(files)
+        if len(subdirs) != 0:
+            folder_structure[os.path.basename(current_dir)]["folders"] = len(files)
 
+        folder_structure[os.path.basename(current_dir)]["files"] = len(files)
 
-    print(file_type_count)
     return folder_structure, file_type_count
 
-def splits():
-    """
-    Returns splits available or None.
-    """
-
-    return
-
 def readme(dataset):
-    test = glob.glob(os.path.join(dataset, "*README.md"))
+    test = glob.glob(os.path.join(dataset, "*README*"))
+    test.append(glob.glob(os.path.join(dataset, "*readme*")))
     return test
 
 if __name__ == "__main__":
     # dataset_path = sys.argv[1]
-    dataset_path = "/home/gigibs/Documents/datasets/gtzan_genre"
+    dataset_path = "/home/gigibs/Documents/datasets/candombe"
     dataset = pathlib.Path(dataset_path)
-    # readme(dataset)
-    a = statistics(dataset)
-    print("dataset type", a)
-    b = readme(dataset)
-    print("readme", b)
-
-    # print(a)
+    folder_structure, file_count = statistics(dataset)
+    print("folder structure", folder_structure)
