@@ -1,99 +1,12 @@
-import transformers
-
-from PIL import Image
-
+import argparse
 import config
+import glob
+import random
 
-class DatasetDescription:
-    def __init__(self, descriptions, tokenizer, model, model_id, verbose=False):
-        self.descriptions = descriptions
-        self.tokenizer = tokenizer(model_id)
-        self.model = model(model_id)
-        self.verbose = verbose
-        return
+from audio_description import AudioDescription
+from image_description import ImageDescription
 
-    def generate_input_text(self, verbose=False):
-        dataset_input_text = f"The following items are descriptions of {len(self.descriptions)} items of the same dataset. Create a unique description of the whole dataset for me that summarizes the common characteristics."
-
-        for idx, desc in enumerate(self.descriptions):
-            d = f"\n{idx+1})  {desc}"
-            dataset_input_text += d
-
-        dataset_input_text += "\n"
-
-        if self.verbose:
-            print(dataset_input_text)
-        return dataset_input_text
-
-    def generate_description(self):
-        dataset_input_text = self.generate_input_text()
-
-        input_ids = self.tokenizer(dataset_input_text, return_tensors="pt").input_ids
-
-        output = self.model.generate(input_ids, max_length=200).squeeze()
-        dataset_description = self.tokenizer.decode(output)
-
-        if self.verbose:
-            print(dataset_description)
-        return dataset_description
-
-
-class ImageDescription:
-    def __init__(self, samples, processor, model, model_id, model_kwargs=None, verbose=False):
-        """
-        arguments
-        ---
-            samples         : list[str]
-                list with samples paths
-            processor       : transformers.processor
-            model           : transformers.model
-            model_kwargs    : dict
-                dictionary with additional model parameters
-            model_id        : str
-                identifier of model
-        """
-
-        self.samples = samples
-        if len(samples) < 10:
-            raise ValueError("We need at least 10 samples")
-
-
-        self.processor = processor(model_id)
-        self.model = model(model_id)
-
-        return
-
-    def generate_sample_descriptions(self, text):
-        """
-        generate description for every sample image
-
-        arguments
-        ---
-            text : str
-                base text for processor
-
-        return
-        ---
-            descriptions : list[str]
-                list with description for each sample
-        """
-
-        descriptions = []
-        for img_path in self.samples:
-            image = Image.open(img_path).convert("RGB")
-            input = self.processor(image, text, return_tensors="pt")
-            model_output = self.model.generate(**input, max_length=40).squeeze()
-            description = self.processor.decode(model_output, skip_special_tokens=True)
-            descriptions.append(description)
-
-        return descriptions
-
-
-
-if __name__ == "__main__":
-    import glob
-    import random
-
+def img_example():
     # dataset sample descriptions
     all_samples = glob.glob("/home/gigibs/Documents/Deep_Learning_Final_BS3/data/dataset/val/video_01000/*.png")
 
@@ -106,7 +19,25 @@ if __name__ == "__main__":
             model_id=config.IMAGE_MODEL_ID,
             verbose=True
     ).generate_sample_descriptions(config.IMAGE_SAMPLE_DESCRIPTION_TEXT)
+    return descriptions
 
+
+def music_example():
+    # dataset sample descriptions
+    all_samples = glob.glob("/home/gigibs/Documents/datasets/candombe/candombe_audio/*.flac")
+    samples = random.choices(all_samples, k=10)
+
+    descriptions = AudioDescription(
+            samples=samples
+    ).generate_sample_descriptions(config.IMAGE_SAMPLE_DESCRIPTION_TEXT)
+    return descriptions
+
+def envsound_example():
+    return
+
+if __name__ == "__main__":
+
+    descriptions = music_example().generate_sample_descriptions(config.AUDIO_PROMPT)
     # combining sample descriptions to generate dataset description
     dds = DatasetDescription(
             descriptions=descriptions,
