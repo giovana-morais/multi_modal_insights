@@ -1,10 +1,16 @@
+"""
+Example script to show how it works
+
+Usage
+    python example_description.py --data_home path/to/your/dataset
+"""
 import argparse
 import config
 import glob
 import random
 
-from audio_description import AudioDescription
-from image_description import ImageDescription
+from src/audio_description import AudioDescription
+from src/image_description import ImageDescription
 
 def img_example():
     # dataset sample descriptions
@@ -36,6 +42,13 @@ def envsound_example():
     return
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_home", type=str, help="path to your dataset",
+            required=True)
+    parser.add_argument("--modality", type="str", choices=["audio", "img",
+        "text", "tabular"], help="data modality", required=False)
+
+    args = parser.parse_args()
 
     descriptions = music_example().generate_sample_descriptions(config.AUDIO_PROMPT)
     # combining sample descriptions to generate dataset description

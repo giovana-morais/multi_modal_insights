@@ -1,5 +1,4 @@
 import transformers
-# configuration constants
 
 # modality-specific models
 # image
