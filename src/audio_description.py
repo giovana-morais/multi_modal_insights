@@ -1,17 +1,34 @@
+import tempfile
+
 import librosa
 import soundfile as sf
 from gradio_client import Client
 
-class AudioDescription:
-    def __init__(self, samples):
-        self.client = Client("https://yuangongfdu-ltu-2.hf.space/")
+from .dataset_description import DatasetDescription
+
+__AUDIO_MODEL__ = "https://yuangongfdu-ltu-2.hf.space/"
+__AUDIO_PROMPT__ = "Is the audio sample music, environmental sound or speech? Can you describe it?"
+
+class AudioDescription(DatasetDescription):
+    def __init__(self, data_home, samples, max_length=15):
+        super(AudioDescription, self).__init__()
+        self.data_home = data_home
+        self.audio_model = Client(__AUDIO_MODEL__)
         self.samples = samples
         # sampling rate following model documentation
         self.default_sr = 16000
-        self.max_length = 15*self.default_sr
+        self.max_length = max_length*self.default_sr
+        self.descriptions = self.generate_sample_descriptions()
+        self.dataset_description = super().dataset_description(self.descriptions)
         return
 
-    def generate_sample_descriptions(self, text):
+    def crop_audio(self, x):
+        cut_x = x.copy()
+        cut_x = cut_x[:self.max_length]
+
+        return cut_x
+
+    def generate_sample_descriptions(self):
         descriptions = []
         for audio_path in self.samples:
             # tmp variable in case we need resampling
@@ -21,18 +38,20 @@ class AudioDescription:
                 # load and resample audio
                 x, _ = librosa.load(audio_path, sr=self.default_sr)
                 # if audio is too big, crop 15 seconds
-                if len(x) > self.max_length:
-                    x = x[:self.max_length]
-                sf.write("tmp.wav", x, self.default_sr)
-                path = "tmp.wav"
+                x = self.crop_audio(x)
 
-            description = self.client.predict(
-                path,  # your audio file in 16K
-                "",
-                text,    # your question
-                "7B (Default)",    # str in 'LLM size' Radio component
-                api_name="/predict"
-            )
+            # generate tmp file for the cropped audio and send it to model
+            # file is destroyed afterwards
+            with tempfile.NamedTemporaryFile(dir=".", suffix=".wav") as f:
+                sf.write(f.name, x, self.default_sr)
+                description = self.audio_model.predict(
+                    f.name,
+                    "",
+                    __AUDIO_PROMPT__,
+                    "7B (Default)",
+                    api_name="/predict"
+                )
+
             descriptions.append(description)
 
         return descriptions
