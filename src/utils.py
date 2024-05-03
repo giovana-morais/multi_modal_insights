@@ -39,22 +39,28 @@ def image_formatter(im):
 def set_topic_explainer_pipe():
     model_id = "llava-hf/llava-1.5-7b-hf"
     quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype=torch.float16,
+        low_cpu_mem_usage=True
     )
-    pipe = pipeline("image-to-text", model=model_id,  model_kwargs={"quantization_config": quantization_config})
+
+    model_kwargs = {
+            "quantization_config": quantization_config,
+    }
+    pipe = pipeline("image-to-text", model=model_id,  model_kwargs=model_kwargs)
     return pipe
 
 
 def set_image_sumarizer_pipe():
     login(hf_key)
     bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,  # 4-bit quantization
-    bnb_4bit_quant_type='nf4',  # Normalized float 4
-    bnb_4bit_use_double_quant=True,  # Second quantization after the first
-    bnb_4bit_compute_dtype=bfloat16  # Computation type
+        load_in_4bit=True,  # 4-bit quantization
+        bnb_4bit_quant_type='nf4',  # Normalized float 4
+        bnb_4bit_use_double_quant=True,  # Second quantization after the first
+        bnb_4bit_compute_dtype=bfloat16  # Computation type
     )
     model_id = 'meta-llama/Llama-2-7b-chat-hf'
+
     # Llama 2 Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_id)
 
@@ -245,26 +251,28 @@ class ImageTopicExtractor:
         return self.topic_model.get_document_info(self.img_list)
 
     def get_final_description(self,dataset_summary_pipe, tokenizer, custom_labels = True):
-         """
-         Function that gives the final image_dataset description
+        """
+        Function that gives the final image_dataset description
 
-         arguments
-         ----
-         dataset_summary_pipe = HF pipeline used to summarize the description
-         tokenizer = tokenizer used on the HF pipeline
-         custom_labels = True or False. If True, we use CustomName column as description of each cluster, otherwise we use name Column
-         """
+        arguments
+        ----
+        dataset_summary_pipe = HF pipeline used to summarize the description
+        tokenizer = tokenizer used on the HF pipeline
+        custom_labels = True or False. If True, we use CustomName column as description of each cluster, otherwise we use name Column
+        """
+
         df = self.get_topic_info()
         df = df[df.Topic>=0]
-        if(custom_labels):
+
+        if custom_labels:
             topic_texts = ''.join(df.apply(lambda x: generate_topic_text(x.CustomName, x.Count),axis=1).to_list())
         else:
             topic_texts = ''.join(df.apply(lambda x: generate_topic_text(x.Name, x.Count),axis=1).to_list())
         system_prompt = """
-        <s>[INST] <<SYS>>
-        You are a helpful, respectful and honest assistant for dataset description.
-        <</SYS>>
-        """
+            <s>[INST] <<SYS>>
+            You are a helpful, respectful and honest assistant for dataset description.
+            <</SYS>>
+            """
 
         example_prompt = """
         I have a dataset that contains the following group of images:

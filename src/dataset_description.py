@@ -1,13 +1,13 @@
 import transformers
 
-__DATASET_MODEL_ID__ = "google/flan-t5-base"
-__DATASET_TOKENIZER__ = transformers.T5Tokenizer.from_pretrained
-__DATASET_MODEL__ = transformers.T5ForConditionalGeneration.from_pretrained
+__DATASET_MODEL_ID__ = "meta-llama/Llama-2-7b-chat-hf"
+__DATASET_TOKENIZER__ = transformers.AutoTokenizer.from_pretrained
+__DATASET_MODEL__ = transformers.AutoModelForCausalLM.from_pretrained
 
 class DatasetDescription:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.dataset_tokenizer = __DATASET_TOKENIZER__(__DATASET_MODEL_ID__)
-        self.dataset_model = __DATASET_MODEL__(__DATASET_MODEL_ID__)
+        self.dataset_model = __DATASET_MODEL__(__DATASET_MODEL_ID__, **kwargs)
 
     def generate_input_text(self, descriptions, verbose=False):
         dataset_input_text = f"The following items are descriptions of {len(self.descriptions)} items of the same dataset. Create a unique description of the whole dataset for me that summarizes the common characteristics."

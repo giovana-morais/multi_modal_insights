@@ -8,6 +8,7 @@ from .dataset_description import DatasetDescription
 
 __AUDIO_MODEL__ = "https://yuangongfdu-ltu-2.hf.space/"
 __AUDIO_PROMPT__ = "Is the audio sample music, environmental sound or speech? Can you describe it?"
+__LTU_SAMPLING_RATE__ = 16000
 
 class AudioDescription(DatasetDescription):
     def __init__(self, data_home, samples, max_length=15):
@@ -16,7 +17,7 @@ class AudioDescription(DatasetDescription):
         self.audio_model = Client(__AUDIO_MODEL__)
         self.samples = samples
         # sampling rate following model documentation
-        self.default_sr = 16000
+        self.sr = __LTU_SAMPLING_RATE__
         self.max_length = max_length*self.default_sr
         self.descriptions = self.generate_sample_descriptions()
         self.dataset_description = super().dataset_description(self.descriptions)
