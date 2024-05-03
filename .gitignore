@@ -1,3 +1,9 @@
+# HPC files
+.multi_insights.sifpath
+multi_insights.ext3
+sing
+singrw
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
