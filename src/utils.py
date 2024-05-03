@@ -23,7 +23,6 @@ from transformers import BitsAndBytesConfig, AutoTokenizer, pipeline, AutoModelF
 from umap import UMAP
 
 
-# Auxiliary functions ------------------------------------------------
 def image_base64(im):
     if isinstance(im, str):
         im = get_thumbnail(im)
@@ -41,7 +40,6 @@ def set_topic_explainer_pipe():
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.float16,
-        low_cpu_mem_usage=True
     )
 
     model_kwargs = {
