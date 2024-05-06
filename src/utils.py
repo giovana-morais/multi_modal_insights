@@ -16,12 +16,12 @@ from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
 from huggingface_hub import login
 from io import BytesIO
-from key import hf_key
 from torch import bfloat16
 from tqdm import tqdm
 from transformers import BitsAndBytesConfig, AutoTokenizer, pipeline, AutoModelForCausalLM
 from umap import UMAP
 
+from key import hf_key
 
 def image_base64(im):
     if isinstance(im, str):
@@ -73,7 +73,8 @@ def set_image_sumarizer_pipe():
 
     # Our text generator
     generator = pipeline(
-        model=model, tokenizer=tokenizer,
+        model=model,
+        tokenizer=tokenizer,
         task='text-generation',
         temperature=0.1,
         max_new_tokens=500,
@@ -219,30 +220,31 @@ class ImageTopicExtractor:
     def get_topic_info(self):
         return self.topic_model.get_topic_info().copy()
 
-    def display_topic_info_images(self,custom_labels=True):
-
-
-        if(custom_labels):
+    def display_topic_info_images(self, custom_labels=True):
+        if custom_labels:
             df = self.topic_model.get_topic_info().drop(["Representative_Docs", "Name", "Representation"],axis=1)
         else:
             df = self.topic_model.get_topic_info().drop(["Representative_Docs", "Name"],axis=1)
-        HTML(df.to_html(formatters={'Visual_Aspect': image_formatter}, escape=False))
-        return HTML(df.to_html(formatters={'Visual_Aspect': image_formatter}, escape=False))
+        return df.to_html(formatters={'Visual_Aspect': image_formatter}, escape=False)
 
-    def visualize_2d_clusters(self,hide_document_hover=True, custom_labels=True, hide_annotations = False):
-        if(self.reduced_embeddings_2d is None):
+    def visualize_2d_clusters(self, hide_document_hover=True, custom_labels=True, hide_annotations=False):
+        if self.reduced_embeddings_2d is None:
             embeddings = self.embedding_model.embed_images(images = self.img_list, verbose = True)
-            vis =  self.topic_model.visualize_documents(self.img_list,
-                                                    embeddings=embeddings,
-                                                    hide_document_hover=hide_document_hover,
-                                                   custom_labels = custom_labels,
-                                                   hide_annotations = hide_annotations)
+            vis = self.topic_model.visualize_documents(
+                    self.img_list,
+                    embeddings=embeddings,
+                    hide_document_hover=hide_document_hover,
+                    custom_labels=custom_labels,
+                    hide_annotations=hide_annotations
+            )
         else:
-            vis =  self.topic_model.visualize_documents(self.img_list,
-                                                    reduced_embeddings=self.reduced_embeddings_2d,
-                                                    hide_document_hover=hide_document_hover,
-                                                   custom_labels = custom_labels,
-                                                   hide_annotations = hide_annotations)
+            vis = self.topic_model.visualize_documents(
+                    self.img_list,
+                    reduced_embeddings=self.reduced_embeddings_2d,
+                    hide_document_hover=hide_document_hover,
+                    custom_labels=custom_labels,
+                    hide_annotations=hide_annotations
+            )
         return vis
 
     def get_document_info(self):
@@ -304,6 +306,7 @@ class ImageTopicExtractor:
         res = dataset_summary_pipe(prompt)
         res = res[0]["generated_text"]
         res = res.split('[/INST]')[2]
+
         return res
 
     def datamap_plot(self,

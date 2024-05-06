@@ -12,6 +12,12 @@ Clone the repo, `cd` into it and install the module by running
 In the `notebooks` folder we have examples of description for each supported
 modality.
 
+## folder structure
+
+* `src`: source code
+* `notebooks`: examples of single-modality descriptions
+* `slurm_jobs`: SLURM jobs to run the code on [HPC](https://sites.google.com/nyu.edu/nyu-hpc/home?authuser=0)
+
 ## team behind it
 
 We started this project as a final project for the Big Data course taught by
