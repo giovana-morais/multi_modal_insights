@@ -12,11 +12,6 @@ from src.audio_description import AudioDescription
 from src.image_description import ImageDescription
 
 
-def music_example(data_home):
-    # dataset sample descriptions
-    return descriptions
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_home", type=str, help="path to your dataset",
