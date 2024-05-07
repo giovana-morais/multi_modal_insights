@@ -1,40 +1,84 @@
-import transformers
+from bertopic import BERTopic
+from bertopic.vectorizers import ClassTfidfTransformer, OnlineCountVectorizer
+from hdbscan import HDBSCAN
+from huggingface_hub import login
+from transformers import BitsAndBytesConfig, AutoTokenizer, pipeline, AutoModelForCausalLM
+from torch import bfloat16
+from umap import UMAP
 
-__DATASET_MODEL_ID__ = "meta-llama/Llama-2-7b-chat-hf"
-__DATASET_TOKENIZER__ = transformers.AutoTokenizer.from_pretrained
-__DATASET_MODEL__ = transformers.AutoModelForCausalLM.from_pretrained
+from .key import hf_key
+
+__MODEL_ID__ = "meta-llama/Llama-2-7b-chat-hf"
+__TOKENIZER__ = AutoTokenizer.from_pretrained
+__MODEL__ = AutoModelForCausalLM.from_pretrained
 
 class DatasetDescription:
     def __init__(self, **kwargs):
-        self.dataset_tokenizer = __DATASET_TOKENIZER__(__DATASET_MODEL_ID__)
-        self.dataset_model = __DATASET_MODEL__(__DATASET_MODEL_ID__, **kwargs)
+        self.umap_model = UMAP(n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine")
+        self.hdbscan_model = HDBSCAN(
+                min_cluster_size=15,
+                metric='euclidean',
+                cluster_selection_method='eom',
+                prediction_data=True
+        )
+        self.vectorizer_model = OnlineCountVectorizer()
+        self.ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
 
-    def generate_input_text(self, descriptions, verbose=False):
-        dataset_input_text = f"The following items are descriptions of {len(self.descriptions)} items of the same dataset. Create a unique description of the whole dataset for me that summarizes the common characteristics."
+    def dataset_description(self, prompt):
+        """
+        given a prompt filled with topic texts, creates a summary description
+        """
+        print("[INFO] creating dataset description")
+        login(hf_key)
+        tokenizer = __TOKENIZER__(__MODEL_ID__)
 
-        for idx, desc in enumerate(self.descriptions):
-            d = f"\n{idx+1})  {desc}"
-            dataset_input_text += d
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,  # 4-bit quantization
+            bnb_4bit_quant_type='nf4',  # Normalized float 4
+            bnb_4bit_use_double_quant=True,  # Second quantization after the first
+            bnb_4bit_compute_dtype=bfloat16  # Computation type
+        )
 
-        dataset_input_text += "\n"
+        model = __MODEL__(
+            __MODEL_ID__,
+            trust_remote_code=True,
+            quantization_config=bnb_config,
+            device_map='auto',
+        )
+        model.eval()
 
-        if verbose:
-            print(dataset_input_text)
-        return dataset_input_text
+        generator = pipeline(
+                model=model,
+                tokenizer=tokenizer,
+                task='text-generation',
+                temperature=0.1,
+                max_new_tokens=500,
+                repetition_penalty=1.1
+        )
+        output = generator(prompt)
+        output = output[0]["generated_text"]
+        output = output.split('[/INST]')[2]
 
-    def dataset_description(self, descriptions):
-        dataset_input_text = self.generate_input_text(descriptions)
+        return output
 
-        input_ids = self.dataset_tokenizer(dataset_input_text, return_tensors="pt").input_ids
+    def topic_model(self, embedding_model, representation_model=None):
+        """
+        given an embedding model and an optional represetation model, returns
+        the BERTopic configurations
+        """
+        model = BERTopic(
+            embedding_model=embedding_model,
+            umap_model=self.umap_model,
+            hdbscan_model=self.hdbscan_model,
+            vectorizer_model=self.vectorizer_model,
+            ctfidf_model=self.ctfidf_model,
+            representation_model=representation_model
+        )
 
-        output = self.dataset_model.generate(input_ids, max_length=200).squeeze()
-        description = self.dataset_tokenizer.decode(output)
+        return model
 
-        return description
+    def create_prompt(topic_texts):
+        raise NotImplementedError
 
-    # def dataset_metadata(self):
-    #     """
-    #     Based on data_home, get
-
-    #     """
-    #     raise NotImplementedError
+    def generate_topic_text(name, count):
+        raise NotImplementedError

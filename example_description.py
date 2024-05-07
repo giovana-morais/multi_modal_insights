@@ -7,27 +7,28 @@ import glob
 import os
 import random
 
-import src.config as config
-from src.audio_description import AudioDescription
+from src.text_description import TextDescription
 from src.image_description import ImageDescription
-
+from src.audio_description import AudioDescription
+from src.tabular_description import TabularDescription
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data_home", type=str, help="path to your dataset",
-            required=True)
-    # parser.add_argument("--modality", type="str", choices=["audio", "img",
-    #     "text", "tabular"], help="data modality", required=False)
+    # text example
+    from sklearn.datasets import fetch_20newsgroups
 
-    args = parser.parse_args()
-    # data_home = "/home/gigibs/Documents/datasets/candombe/candombe_audio"
+    data = fetch_20newsgroups(subset='all',  remove=('headers', 'footers', 'quotes'))['data']
+    text_dataset = TextDescription(data=data)
+    print(text_dataset.dataset_description)
 
-    all_samples = glob.glob(os.path.join(args.data_home, "*.flac"))
-    samples = random.choices(all_samples, k=10)
-    print(samples)
+    # image example
 
-    audio_dataset_description = AudioDescription(
-            data_home=args.data_home,
-            samples=samples
-    ).dataset_description
-    print(audio_dataset_description)
+
+    # all_samples = glob.glob(os.path.join(args.data_home, "*.flac"))
+    # samples = random.choices(all_samples, k=10)
+    # print(samples)
+
+    # audio_dataset_description = AudioDescription(
+    #         data_home=args.data_home,
+    #         samples=samples
+    # ).dataset_description
+    # print(audio_dataset_description)
