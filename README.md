@@ -3,6 +3,9 @@
 ## how it works
 We detect the modality of the data by analyzing file types
 
+![big_data_workflow](https://github.com/giovana-morais/multi_modal_insights/assets/12520431/a4cc1d34-ad45-4976-a7d4-6b3bebb5c213)
+
+
 ## how to use
 
 Clone the repo, `cd` into it and install the module by running
