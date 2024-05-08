@@ -57,7 +57,7 @@ class DatasetDescription:
         )
         output = generator(prompt)
         output = output[0]["generated_text"]
-        output = output.split('[/INST]')[2]
+        output = output.split('[/INST]')[-1]
 
         return output
 

@@ -10,7 +10,7 @@ import random
 from src.text_description import TextDescription
 from src.image_description import ImageDescription
 from src.audio_description import AudioDescription
-# from src.tabular_description import TabularDescription
+from src.tabular_description import TabularDescription
 
 def text_example():
     from sklearn.datasets import fetch_20newsgroups
@@ -58,13 +58,19 @@ def audio_example():
 
     return dataset.dataset_description
 
+def tabular_example():
+    data = "sample_data/tabular/smoking_health_data_final.csv"
+    dataset = TabularDescription(data_home=data)
+
+    return dataset.dataset_description
+
 if __name__ == "__main__":
 
     import time
-    print("Generating image description")
-    start = time.time()
-    print(hpc_image_example())
-    print(f"Duration: {time.time() - start}")
+    # print("Generating image description")
+    # start = time.time()
+    # print(hpc_image_example())
+    # print(f"Duration: {time.time() - start}")
 
     # print("Generating text description")
     # start = time.time()
@@ -80,3 +86,8 @@ if __name__ == "__main__":
     # start = time.time()
     # print(audio_example())
     # print(f"Duration: {time.time() - start}")
+
+    print("Generating tabular description")
+    start = time.time()
+    print(tabular_example())
+    print(f"Duration: {time.time() - start}")
