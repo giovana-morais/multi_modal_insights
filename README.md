@@ -5,15 +5,14 @@ We detect the modality of the data by analyzing file types
 
 ![big_data_workflow](https://github.com/giovana-morais/multi_modal_insights/assets/12520431/a4cc1d34-ad45-4976-a7d4-6b3bebb5c213)
 
-
 ## how to use
 
-Clone the repo, `cd` into it and install the module by running
+Clone the repo, `cd` into it and install all the dependencies
+`pip install -r requirements.txt`
 
-`pip install -e .`
-
-In the `notebooks` folder we have examples of description for each supported
-modality.
+you have different modalities examples in the `example_description.py` script.
+choose your favorite modality and see the project in action with a sample
+dataset.
 
 ## folder structure
 
