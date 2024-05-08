@@ -7,7 +7,7 @@ from .dataset_description import DatasetDescription
 
 __EMBEDDING_MODEL__ = "clip-ViT-B-32"
 __REPRESENTATION_MODEL__ = "nlpconnect/vit-gpt2-image-captioning"
-__DATA_THRESHOLD__ = 10000
+__DATA_THRESHOLD__ = 20000
 
 class ImageDescription(DatasetDescription):
     def __init__(self, data_home=None, data=None):
@@ -17,8 +17,8 @@ class ImageDescription(DatasetDescription):
 
         self.data_home = data_home
         self.data = data
-        if self.data > __THRESHOLD__:
-            self.data = random.choices(self.data, k=__THRESHOLD__)
+        if len(self.data) > __DATA_THRESHOLD__:
+            self.data = random.choices(self.data, k=__DATA_THRESHOLD__)
 
         self.embedding_model = MultiModalBackend(__EMBEDDING_MODEL__,
                 batch_size=32)

@@ -1,6 +1,6 @@
 """
 Usage
-    python example_description.py --data_home "../datasets/candombe/candombe_audio/*.flac"
+    python example_description.py
 """
 import argparse
 import glob
@@ -15,15 +15,18 @@ from src.audio_description import AudioDescription
 def text_example():
     from sklearn.datasets import fetch_20newsgroups
 
-    data = fetch_20newsgroups(subset='all',  remove=('headers', 'footers', 'quotes'))['data']
+    data_home = "sample_data/text/"
+    data = fetch_20newsgroups(data_home=data_home, subset='all',  remove=('headers', 'footers', 'quotes'))['data']
     dataset = TextDescription(data=data)
     return dataset.dataset_description
 
 def image_example():
+    from sentence_transformers import util
     img_folder = 'sample_data/image/photos/'
 
-    # download flickrdata if folder does not exist or if it is empty
+    # download data if folder does not exist or if it is empty
     if not os.path.exists(img_folder) or len(os.listdir(img_folder)) == 0:
+        print("[INFO] Downloading Flicker8k data")
         os.makedirs(img_folder, exist_ok=True)
 
         if not os.path.exists('Flickr8k_Dataset.zip'):   #Download dataset if does not exist
@@ -39,8 +42,15 @@ def image_example():
 
     return dataset.dataset_description
 
+def hpc_image_example():
+    data = list(glob.glob("/coco/train2014/*.jpg"))
+    dataset = ImageDescription(data=data)
+
+    return dataset.dataset_description
+
 def audio_example():
-    audio_folder = "/media/gigibs/DD02EEEC68459F17/datasets/candombe/candombe_audio/*.flac"
+    # audio_folder = "/media/gigibs/DD02EEEC68459F17/datasets/candombe/candombe_audio/*.flac"
+    audio_folder = "/scratch/work/marl/datasets/mir_datasets/candombe/audio/*.wav"
 
     data = list(glob.glob(audio_folder))
     print(len(data))
@@ -50,7 +60,23 @@ def audio_example():
 
 if __name__ == "__main__":
 
-    # print(text_example())
-    # print(image_example())
+    import time
+    print("Generating image description")
+    start = time.time()
+    print(hpc_image_example())
+    print(f"Duration: {time.time() - start}")
 
-    print(audio_example())
+    # print("Generating text description")
+    # start = time.time()
+    # print(text_example())
+    # print(f"Duration: {time.time() - start}")
+
+    # print("Generating image description")
+    # start = time.time()
+    # print(image_example())
+    # print(f"Duration: {time.time() - start}")
+
+    # print("Generating audio description")
+    # start = time.time()
+    # print(audio_example())
+    # print(f"Duration: {time.time() - start}")
